@@ -2,7 +2,6 @@
 	single linked list merge
 	This problem requires you to merge two ordered singly linked lists into one ordered singly linked list
 */
-// I AM NOT DONE
 
 use std::fmt::{self, Display, Formatter};
 use std::ptr::NonNull;
@@ -70,13 +69,72 @@ impl<T> LinkedList<T> {
         }
     }
 	pub fn merge(list_a:LinkedList<T>,list_b:LinkedList<T>) -> Self
+    where
+        T: Ord
 	{
-		//TODO
-		Self {
-            length: 0,
-            start: None,
-            end: None,
+		let mut pa = list_a.start;
+        let mut pb = list_b.start;
+        let mut res = LinkedList::<T>::new();
+
+        while let (Some(na), Some(nb)) = (pa, pb) {
+            let va = unsafe {&(*na.as_ptr()).val};
+            let vb = unsafe {&(*nb.as_ptr()).val};
+
+            let (pick, next_after_pick) = if  va <= vb {
+                let next = unsafe {(*na.as_ptr()).next};
+                (na, next)
+            } else {
+                let next = unsafe {(*nb.as_ptr()).next};
+                (nb, next)
+            };
+
+            unsafe {(*pick.as_ptr()).next = None};
+            match res.end {
+                None => {
+                    res.start = Some(pick);
+                    res.end = Some(pick);
+                }
+                Some(tail) => unsafe {
+                    (*tail.as_ptr()).next = Some(pick);
+                    res.end = Some(pick)
+                }
+            }
+
+            if va <= vb {
+                pa = next_after_pick;
+            } else {
+                pb = next_after_pick;
+            }
+            res.length += 1;
         }
+
+        let rest = if pa.is_some() {pa} else {pb};
+        if let Some(first_rest) = rest {
+            let mut cur = first_rest;
+            let mut add_len: u32 = 0;
+            loop {
+                add_len += 1;
+                let next = unsafe {(*cur.as_ptr()).next};
+                if let Some(n) = next {
+                    cur = n;
+                } else {
+                    break;
+                }
+            }
+
+            match res.end {
+                None => {
+                    res.start = Some(first_rest);
+                    res.end = Some(cur);
+                }
+                Some(tail) => unsafe {
+                    (*tail.as_ptr()).next = Some(first_rest);
+                    res.end = Some(cur);
+                }
+            }
+            res.length += add_len;
+        }
+        res
 	}
 }
 
